@@ -325,7 +325,7 @@ class DriftCorrectionDisplay(Display):
             for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'status']):
                 try:
                     if (proc.info['cmdline'] and 
-                        'crixs_atm_fb.py' in ' '.join(proc.info['cmdline']) and
+                        'drift_correction_main.py' in ' '.join(proc.info['cmdline']) and
                         proc.info['status'] not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]):         
                         print(f"Found process to kill: PID {proc.pid}")
                         self.show_message(f"Stopping process PID: {proc.pid}")
@@ -441,7 +441,7 @@ class DriftCorrectionDisplay(Display):
                         #     print(f"[DEBUG] Found python process: {cmdline_str}")
                         # More specific matching - look for exact script name and python
                         if ('python' in cmdline_str.lower() and
-                            'crixs_atm_fb.py' in cmdline_str and
+                            'drift_correction_main.py' in cmdline_str and
                             proc.info['status'] in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]):
                             print(f"[DEBUG] Found matching process: PID={proc.pid}, CMD={cmdline_str}")
                             return True, proc.pid
