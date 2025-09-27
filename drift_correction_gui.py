@@ -78,7 +78,7 @@ class DriftCorrectionDisplay(Display):
         current_layout .addWidget(curr_ampl_label, 0, 1)
         # Current FWHM
         current_layout.addWidget(QLabel("Current FWHM:"), 1, 0)
-        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:47", 3)
+        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:47", 4)
         current_layout.addWidget(curr_fwhm_label, 1, 1)
         # Current position
         current_layout.addWidget(QLabel("Current Position (fs):"), 2, 0)

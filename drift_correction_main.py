@@ -25,7 +25,8 @@ class drift_correction():
         except json.JSONDecodeError as e: # Check that json file syntax is correct
             print('Invalid JSON syntax: '+e)
         # create PV objects
-        self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool waveform PV from the DAQ - COMMENT IF TESTING
+        #self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool waveform PV from the DAQ - COMMENT IF TESTING
+        self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # timetool waveform PV from the DAQ - COMMENT IF TESTING
         #self.atm_err_ampl_pv = Pv('LAS:UNDS:FLOAT:59')  # PV to hold dummy edge amplitude for testing - COMMENT IF NOT TESTING
         #self.atm_err_flt_pos_fs_pv = Pv('LAS:UNDS:FLOAT:58')  # PV to hold dummy fs error for testing - COMMENT IF NOT TESTING
         self.atm_fb_pv = Pv('LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET')  # hook for ATM feedback in laser locker HLA
