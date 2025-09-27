@@ -1,6 +1,6 @@
 # drift_correction_gui.py
 from pydm import Display
-from pydm.widgets import PyDMLabel, PyDMLineEdit, PyDMCheckbox, PyDMPushButton
+from pydm.widgets import PyDMLabel, PyDMLineEdit, PyDMCheckbox, PyDMPushButton, PyDMEnumComboBox
 from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QGridLayout, QTabWidget, QWidget, QLabel, QPushButton, QMessageBox
 from qtpy.QtCore import Qt
 
@@ -21,7 +21,7 @@ class DriftCorrectionDisplay(Display):
 
         # Script management variables
         self.script_process = None
-        self.script_path = "/cds/group/laser/timing/lcls-drift-corr/drift_correction_main.py"
+        self.script_path = "/cds/group/laser/timing/femto-timing/dev/exp-timing/crixs_atm_fb.py"
         # Create main layout
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
@@ -196,6 +196,21 @@ class DriftCorrectionDisplay(Display):
         self.check_button = QPushButton("Check Status")
         self.check_button.clicked.connect(self.manual_status_check)  # Use a wrapper method
         script_layout.addWidget(self.check_button, 1, 3)
+        
+        # Add Hutch selector label and line edit with readback after buttons (e.g. row 2 or next row)
+        row = 2  # For example, put in row 2; adjust based on existing layout
+    
+        script_layout.addWidget(QLabel("Hutch Value (0=cRIXS, 1=qRIXS):"), row, 0)
+    
+        hutch_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:40", precision=0)
+        script_layout.addWidget(hutch_edit, row, 1)
+    
+        script_layout.addWidget(QLabel("Current:"), row, 2)
+    
+        hutch_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:40", precision=0)
+        hutch_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
+        script_layout.addWidget(hutch_readback, row, 3)
+        
         system_layout.addWidget(script_group)
 
         # Status group
