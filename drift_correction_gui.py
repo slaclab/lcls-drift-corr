@@ -21,7 +21,7 @@ class DriftCorrectionDisplay(Display):
 
         # Script management variables
         self.script_process = None
-        self.script_path = "/cds/group/laser/timing/femto-timing/dev/exp-timing/crixs_atm_fb.py"
+        self.script_path = "/cds/group/laser/timing/lcls-drift-corr/drift_correction_main.py"
         # Create main layout
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
