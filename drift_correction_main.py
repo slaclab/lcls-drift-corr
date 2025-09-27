@@ -173,7 +173,7 @@ class drift_correction():
         self.on_off = self.on_off_pv.get(timeout=1.0)
         self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale from fs to ns and apply direction and gain
         self.atm_fb = self.atm_fb + self.correction  # ATM FB offset is a steady state offset (in other words, target time is not updated), so the feedback offset must be updated progressively
-        if (self.on_off == 1) and ((abs(self.correction) < 0.0015)):  # check if drift correction has been turned on and limit corrections to 1.5 ps
+        if (self.on_off == 1) and ((abs(self.correction) < 0.001)):  # check if drift correction has been turned on and limit corrections to 1 ps
             self.atm_fb_pv.put(value=self.atm_fb, timeout=1.0)  # write to correction PV
         else:
             pass
