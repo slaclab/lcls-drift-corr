@@ -10,10 +10,10 @@ class hutch_selection_changed(Exception):
 
 
 class drift_correction():
-    """Takes the ATM error PV, filters by edge amplitude, and applies an offset via the laser lockers HLA."""
+    """main class for drift correction"""
     def __init__(self):
         # load correction hutch config file
-        self.hutch_selector_pv = Pv('LAS:UNDS:FLOAT:40')  # value of 0 selects cRIXS, 1 selects qRIXS (any other value will default to cRIXS)
+        self.hutch_selector_pv = Pv('LAS:UNDS:FLOAT:40')  # 0 selects cRIXS, 1 selects qRIXS (any other value will default to cRIXS)
         self.hutch_selector = self.hutch_selector_pv.get(timeout=1.0)
         if (self.hutch_selector == 1):  # qRIXS
             self.config = '/cds/group/laser/timing/lcls-drift-corr/qrixs_atm_fb.json'
@@ -45,7 +45,7 @@ class drift_correction():
         self.flt_pos_offset_pv = Pv(str(self.hutch_config['flt_pos_offset_pv']))  # offset in fs - based on real ATM data
         self.txt_pv = Pv(str(self.hutch_config['txt_pv']))  # TXT stage position PV for filtering
         self.heartbeat_pv = Pv('LAS:UNDS:FLOAT:41')  # heartbeat to show script is running
-        self.filter_state_pv = Pv(str(self.hutch_config['filter_state_pv']))  # indicates which filtering conditions are not met 
+        self.filter_state_pv = Pv(str(self.hutch_config['filter_state_pv']))  # indicates which filtering conditions are not met
         self.avg_mode_pv = Pv(str(self.hutch_config['avg_mode_pv']))  # PV so user can select desired averaging mode
         self.decay_factor_pv = Pv(str(self.hutch_config['decay_factor_pv']))  # decay factor for decaying median filter
         self.fb_direction_pv = Pv(str(self.hutch_config['fb_direction_pv']))  # direction of the feedback correction
@@ -58,7 +58,7 @@ class drift_correction():
         self.fwhm_vals = deque()  # dictionary to hold fwhm values for averaging
         self.error_vals = deque()  # dictionary to hold error values for averaging
         self.heartbeat_counter = 0 # init counter to update heartbeat PV
-    
+
     def pull_filter_limits(self):
         self.ampl_min = self.ampl_min_pv.get(timeout=1.0)
         self.ampl_max = self.ampl_max_pv.get(timeout=1.0)
@@ -66,11 +66,11 @@ class drift_correction():
         self.fwhm_max = self.fwhm_max_pv.get(timeout=1.0)
         self.pos_fs_min = self.pos_fs_min_pv.get(timeout=1.0)
         self.pos_fs_max = self.pos_fs_max_pv.get(timeout=1.0)
-    
+
     def correct(self):
-        """Takes ATM waveform PV data, applies filtering to detemine valid error values, and applies a correction to laser locker HLA."""
+        """filters data and applies correction"""
         self.hutch_selector_new = self.hutch_selector_pv.get(timeout=1.0)
-        if (self.hutch_selector_new != self.hutch_selector):  # if a different hutch has been selected, re-initialize
+        if (self.hutch_selector_new != self.hutch_selector):  # hutch change
             raise hutch_selection_changed
         self.atm_err = self.atm_err_pv.get(timeout=60.0)  # COMMENT THIS LINE IF TESTING
         self.atm_fb = self.atm_fb_pv.get(timeout=60.0)  # get current ATM FB offset
@@ -100,7 +100,7 @@ class drift_correction():
             self.curr_ampl_pv.put(value=self.atm_err[0], timeout=1.0)  # COMMENT THIS LINE IF TESTING
             self.curr_fwhm_pv.put(value=self.atm_err[3], timeout=1.0)  # COMMENT THIS LINE IF TESTING
             self.curr_flt_pos_fs_pv.put(value=self.curr_flt_pos_fs, timeout=1.0)  # COMMENT THIS LINE IF TESTING
-            # ============= filtering ==============
+            # ============= filter state ==============
             self.filter_state = 0  # 0: passes all filter conditions
             if not (self.atm_err[0] > self.ampl_min): self.filter_state = 1  # edge amplitude too low
             if not (self.atm_err[0] < self.ampl_max): self.filter_state = 2  # edge amplitude too high
@@ -129,36 +129,41 @@ class drift_correction():
         # ============= averaging ===============
         self.avg_mode = self.avg_mode_pv.get(timeout=1.0)
         if (self.avg_mode == 1):  # block averaging
-            self.avg_ampl = sum(self.ampl_vals()) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals()) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
-            self.avg_error = sum(self.error_vals()) / len(self.error_vals)
+            self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_error = sum(self.error_vals) / len(self.error_vals)
             # reset deques completely for next iteration
             self.ampl_vals.clear()
             self.fwhm_vals.clear()
             self.error_vals.clear()
         elif (self.avg_mode == 2):  # moving average
-            self.avg_ampl = sum(self.ampl_vals()) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals()) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
-            self.avg_error = sum(self.error_vals()) / len(self.error_vals)
+            self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_error = sum(self.error_vals) / len(self.error_vals)
             # remove oldest element from deques
             self.ampl_vals.popleft()
             self.fwhm_vals.popleft()
             self.error_vals.popleft()
         else:  # decaying median filter
             # first, calculate moving average for amplitude and FWHM
-            self.avg_ampl = sum(self.ampl_vals()) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals()) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
             # then calculate decaying median edge position
             self.decay_factor = self.decay_factor_pv.get(timeout=1.0)
-            self.weights = [self.decay_factor ** (self.sample_size - i - 1) for i in range(self.sample_size)]  # calculate weight of each element in deque
-            self.weighted_values = [(self.error_vals[i], self.weights[i]) for i in range(self.sample_size)]  # elements are paired with weights
+            current_size = len(self.error_vals)  # Use actual deque size
+            self.weights = [self.decay_factor ** (self.sample_size - i - 1) for i in range(current_size)]  # calculate weight of each element in deque
+            self.weighted_values = [(self.error_vals[i], self.weights[i]) for i in range(current_size)]  # elements are paired with weights
             self.sorted_values = sorted(self.weighted_values, key=lambda x: x[0])  # sort element/weight pairs by element value
             self.cumulative_weights = np.cumsum([val[1] for val in self.sorted_values])  # calculate the cumulative weight
             self.total_weight = self.cumulative_weights[-1]
             self.target_weight = self.total_weight / 2
-            for value, cum_weight in zip([val[0] for val in self.sorted_values], self.cumulative_weights):  # loop through element/weight pairs until target weight reached
+            # Initialize to a default value in case loop doesn't execute
+            self.avg_error = self.error_vals[-1] if len(self.error_vals) > 0 else 0
+
+            for value, cum_weight in zip([val[0] for val in self.sorted_values], self.cumulative_weights):  # loop through until target weight reached
                 if cum_weight >= self.target_weight:
                     self.avg_error = value
+                    break
             # remove oldest element from deques
             self.ampl_vals.popleft()
             self.fwhm_vals.popleft()
@@ -172,9 +177,9 @@ class drift_correction():
         self.fb_direction = self.fb_direction_pv.get(timeout=1.0)  # pull correction direction
         self.fb_gain = self.fb_gain_pv.get(timeout=1.0)  # pull gain PV value
         self.on_off = self.on_off_pv.get(timeout=1.0)
-        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale from fs to ns and apply direction and gain
-        self.atm_fb = self.atm_fb + self.correction  # ATM FB offset is a steady state offset (in other words, target time is not updated), so the feedback offset must be updated progressively
-        if (self.on_off == 1) and ((abs(self.correction) < 0.001)):  # check if drift correction has been turned on and limit corrections to 1 ps
+        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale, direction, and gain
+        self.atm_fb = self.atm_fb + self.correction  # update ATM FB value
+        if (self.on_off == 1) and ((abs(self.correction) < 0.001)):  # check drift correction on and <1 ps
             self.atm_fb_pv.put(value=self.atm_fb, timeout=1.0)  # write to correction PV
         else:
             pass
@@ -184,6 +189,7 @@ class drift_correction():
             print('Most recent correction value in fs: ', self.correction * 1000000)
 
 def run():
+    print(f"Drift correction script started at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     correction = drift_correction()  # initialize
     heartbeat_counter = 0
     try:
@@ -196,7 +202,7 @@ def run():
                 time.sleep(0.1)  # keep loop from spinning too fast
             except hutch_selection_changed:
                 correction = drift_correction()  # re-initialize
-                correction.atm_fb_pv.put(value=0, timeout=1.0)  # zero out correction when changing hutches
+                correction.atm_fb_pv.put(value=0, timeout=1.0)  # zero correction when changing hutches
     except KeyboardInterrupt:
         print("Script terminated by user.")
 
