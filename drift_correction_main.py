@@ -128,6 +128,11 @@ class drift_correction():
             self.txt_prev = round(self.txt_pv.get(timeout=1.0), 1)  # update previous txt position for filtering
         # ============= averaging ===============
         self.avg_mode = self.avg_mode_pv.get(timeout=1.0)
+
+        # Check if we have any data to average
+        if len(self.ampl_vals) == 0:
+            return  # Skip this iteration if no valid data
+
         if (self.avg_mode == 1):  # block averaging
             self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
             self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
