@@ -12,7 +12,7 @@
     "curr_flt_pos_fs_pv": "LAS:UNDS:FLOAT:29",
     "flt_pos_fs_pv": "LAS:UNDS:FLOAT:28",
     "flt_pos_offset_pv": "LAS:UNDS:FLOAT:27",
-    "txt_pv": "LAS:UNDS:FLOAT:26",
+    "txt_pv": "LM1K2:MCS2:01:m10.RBV",
     "filter_state_pv": "LAS:UNDS:FLOAT:25",
     "avg_mode_pv": "LAS:UNDS:FLOAT:24",
     "decay_factor_pv": "LAS:UNDS:FLOAT:23",
