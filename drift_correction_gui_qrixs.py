@@ -78,16 +78,16 @@ class DriftCorrectionDisplay(Display):
         current_group = QGroupBox("Current Values")
         current_layout = QGridLayout(current_group)
         # Current amplitude
-        current_layout.addWidget(QLabel("Current Amplitude:"), 0, 0)
-        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:37", 3)
+        current_layout.addWidget(QLabel("Average Amplitude:"), 0, 0)
+        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:36", 3)
         current_layout .addWidget(curr_ampl_label, 0, 1)
         # Current FWHM
-        current_layout.addWidget(QLabel("Current FWHM:"), 1, 0)
-        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:33", 4)
+        current_layout.addWidget(QLabel("Average FWHM:"), 1, 0)
+        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:32", 4)
         current_layout.addWidget(curr_fwhm_label, 1, 1)
         # Current position
-        current_layout.addWidget(QLabel("Current Position (fs):"), 2, 0)
-        curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:29", 1)
+        current_layout.addWidget(QLabel("Correction (fs):"), 2, 0)
+        curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:28", 1)
         current_layout.addWidget(curr_pos_label, 2, 1)
         filter_layout.addWidget(current_group)
 
