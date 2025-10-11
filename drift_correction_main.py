@@ -45,8 +45,8 @@ class drift_correction():
         # Values from ATM timetool PV
         # only one should be uncommented at a time
         # === COMMENT IF TESTING ===
-        self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
-        # self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
+        # self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
+        self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
         # === END ===
 
         # === COMMENT IF NOT TESTING ===
@@ -153,10 +153,10 @@ class drift_correction():
             if not (self.atm_err[0] > self.ampl_min): self.filter_state = 1  # amplitude too low
             if not (self.atm_err[0] < self.ampl_max): self.filter_state = 2  # amplitude too high
             if not (self.atm_err[3] > self.fwhm_min): self.filter_state = 3  # FWHM too low
-            if not (self.atm_err[3] < self.fwhm_max): self.filter_state = 4  # FWHM too
+            if not (self.atm_err[3] < self.fwhm_max): self.filter_state = 4  # FWHM too high
             if not (self.curr_flt_pos_fs > self.pos_fs_min): self.filter_state = 5  # position too low
             if not (self.curr_flt_pos_fs < self.pos_fs_max): self.filter_state = 6  # position too high
-            if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
+            # if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
             if not (round(self.txt_pv.get(timeout=1.0), 1) == self.txt_prev): self.filter_state = 8  # txt stage is moving
             self.filter_state_pv.put(value=self.filter_state, timeout=1.0)  # update filter state
             if (self.filter_state == 0):  # COMMENT IF TESTING
@@ -227,12 +227,13 @@ class drift_correction():
         # update average value PVs of filter parameters and error
         self.ampl_pv.put(value=self.avg_ampl, timeout=1.0)
         self.fwhm_pv.put(value=self.avg_fwhm, timeout=1.0)  # COMMENT THIS LINE IF TESTING
-        self.flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)
+        # self.flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)
         # update control parameters and apply correction
         self.fb_direction = self.fb_direction_pv.get(timeout=1.0)
         self.fb_gain = self.fb_gain_pv.get(timeout=1.0)
         self.on_off = self.on_off_pv.get(timeout=1.0)
-        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale, direction, and gain
+        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale to ns, direction, and gain
+        self.flt_pos_fs_pv.put(value=(self.correction * 1000000), timeout=1.0)  # correction to PV for logging
         self.atm_fb = self.atm_fb + self.correction  # update ATM FB
         if (self.on_off == 1) and ((abs(self.correction) < 0.001)):  # check drift correction on and <1 ps
             self.atm_fb_pv.put(value=self.atm_fb, timeout=1.0)  # write to correction PV
