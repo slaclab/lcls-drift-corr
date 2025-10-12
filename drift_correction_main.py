@@ -45,8 +45,8 @@ class drift_correction():
         # Values from ATM timetool PV
         # only one should be uncommented at a time
         # === COMMENT IF TESTING ===
-        # self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
-        self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
+        self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
+        # self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
         # === END ===
 
         # === COMMENT IF NOT TESTING ===
@@ -108,7 +108,10 @@ class drift_correction():
         self.flt_pos_offset = self.flt_pos_offset_pv.get(timeout=1.0)  # position offset
         # === COMMENT IF TESTING ===
         self.atm_err = self.atm_err_pv.get(timeout=60.0)
-        self.flt_pos_fs = (self.atm_err[2] * 1000) - self.flt_pos_offset
+        self.atm_err_pos_ps = self.atm_err[1]  # pos ps
+        self.atm_err_amp = self.atm_err[2]  # amplitude
+        self.atm_err_fwhm = self.atm_err[5]  # FWHM
+        self.flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset
         # === END ===
         # self.flt_pos_fs = self.atm_err_flt_pos_fs_pv.get(timeout = 1.0)  # COMMENT IF NOT TESTING
         self.atm_fb = self.atm_fb_pv.get(timeout=60.0)  # ATM FB value
@@ -127,7 +130,7 @@ class drift_correction():
             # get current PV values
             # === COMMENT IF TESTING ===
             self.atm_err = self.atm_err_pv.get(timeout=60.0)
-            self.curr_flt_pos_fs = (self.atm_err[2] * 1000) - self.flt_pos_offset  # calcuate offset adjusted position in fs
+            self.curr_flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset  # calcuate offset adjusted position in fs
             # === END ===
             # === COMMENT IF NOT TESTING ===
             # self.atm_err0 = self.atm_err_ampl_pv.get(timeout = 1.0)
@@ -140,8 +143,8 @@ class drift_correction():
                 self.bad_count = 0
             # update tracking PVs
             # === COMMENT IF TESTING ===
-            self.curr_ampl_pv.put(value=self.atm_err[0], timeout=1.0)
-            self.curr_fwhm_pv.put(value=self.atm_err[3], timeout=1.0)
+            self.curr_ampl_pv.put(value=self.atm_err_amp, timeout=1.0)
+            self.curr_fwhm_pv.put(value=self.atm_err_fwhm, timeout=1.0)
             self.curr_flt_pos_fs_pv.put(value=self.curr_flt_pos_fs, timeout=1.0)
             # === END ===
             # === COMMENT IF NOT TESTING ===
@@ -150,10 +153,10 @@ class drift_correction():
             # === END ===
             # ============= check and update filter state ==============
             self.filter_state = 0  # 0: passes all filter conditions
-            if not (self.atm_err[0] > self.ampl_min): self.filter_state = 1  # amplitude too low
-            if not (self.atm_err[0] < self.ampl_max): self.filter_state = 2  # amplitude too high
-            if not (self.atm_err[3] > self.fwhm_min): self.filter_state = 3  # FWHM too low
-            if not (self.atm_err[3] < self.fwhm_max): self.filter_state = 4  # FWHM too high
+            if not (self.atm_err_amp > self.ampl_min): self.filter_state = 1  # amplitude too low
+            if not (self.atm_err_amp < self.ampl_max): self.filter_state = 2  # amplitude too high
+            if not (self.atm_err_fwhm > self.fwhm_min): self.filter_state = 3  # FWHM too low
+            if not (self.atm_err_fwhm < self.fwhm_max): self.filter_state = 4  # FWHM too high
             if not (self.curr_flt_pos_fs > self.pos_fs_min): self.filter_state = 5  # position too low
             if not (self.curr_flt_pos_fs < self.pos_fs_max): self.filter_state = 6  # position too high
             # if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
@@ -163,8 +166,8 @@ class drift_correction():
             # if (self.atm_err0 > self.ampl_min) and (self.atm_err0 < self.ampl_max) and (self.atm_err2 > self.pos_fs_min) and (self.atm_err2 < self.pos_fs_max) and (self.atm_err2 != self.flt_pos_fs):  # COMMENT IF NOT TESTING
             # if True:  # DEBUG LINE - bypasses all filtering
                 # === COMMENT IF TESTING ===
-                self.ampl = self.atm_err[0]  # unpack ampl filter parameter
-                self.fwhm = self.atm_err[3]  # unpack fwhm filter parameter
+                self.ampl = self.atm_err_amp  # unpack ampl filter parameter
+                self.fwhm = self.atm_err_fwhm  # unpack fwhm filter parameter
                 self.flt_pos_fs = self.curr_flt_pos_fs
                 self.ampl_vals.append(self.ampl)
                 self.fwhm_vals.append(self.fwhm)
