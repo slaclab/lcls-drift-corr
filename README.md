@@ -8,6 +8,7 @@ Python-based ATM feedback for drift correction in laser timing (LCLS-II cRIXS/qR
 |-----------------------------|-----------------------------------|
 | `drift_correction_main.py`  | Main feedback script              |
 | `drift_correction_gui.py`   | PyDM GUI                          |
+| `drift_correction_gui_qrixs.py`   | PyDM GUI (qRIXS)                          |
 | `crixs_atm_fb.json`         | cRIXS parameters                  |
 | `qrixs_atm_fb.json`         | qRIXS parameters                  |
 
