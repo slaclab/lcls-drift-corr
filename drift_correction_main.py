@@ -46,6 +46,8 @@ class drift_correction():
         # only one should be uncommented at a time
         self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
         # self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
+        # self.atm_err_pv = Pv('CRIX:TIMETOOL:TTALL')  # cRIXS timetool PV
+        # self.atm_err_pv = Pv('QRIX:TIMETOOL:TTALL')  # qRIXS timetool PV
 
         # script control PVs
         self.heartbeat_pv = Pv('LAS:UNDS:FLOAT:41')
