@@ -44,15 +44,8 @@ class drift_correction():
 
         # Values from ATM timetool PV
         # only one should be uncommented at a time
-        # === COMMENT IF TESTING ===
         self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
         # self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
-        # === END ===
-
-        # === COMMENT IF NOT TESTING ===
-        # self.atm_err_ampl_pv = Pv('LAS:UNDS:FLOAT:59')  # testing amplitude
-        # self.atm_err_flt_pos_fs_pv = Pv('LAS:UNDS:FLOAT:58')  # testing fs error
-        # === END ===
 
         # script control PVs
         self.heartbeat_pv = Pv('LAS:UNDS:FLOAT:41')
@@ -114,10 +107,7 @@ class drift_correction():
             raise hutch_selection_changed
         # === Update values ===
         self.flt_pos_offset = self.flt_pos_offset_pv.get(timeout=1.0)  # position offset
-        # === COMMENT IF TESTING ===
         self.pull_atm_values()
-        # === END ===
-        # self.flt_pos_fs = self.atm_err_flt_pos_fs_pv.get(timeout = 1.0)  # COMMENT IF NOT TESTING
         self.atm_fb = self.atm_fb_pv.get(timeout=60.0)  # ATM FB value
         self.pull_filter_limits()
         self.txt_prev = round(self.txt_pv.get(timeout=1.0), 1)
@@ -132,29 +122,17 @@ class drift_correction():
                 print(f"[WARN] Buffer fill timeout at {loop_counter} iterations. Exiting correct().")
                 raise buffer_fill_timeout
             # get current PV values
-            # === COMMENT IF TESTING ===
             self.pull_atm_values()
             self.curr_flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset  # calcuate offset adjusted position in fs
-            # === END ===
-            # === COMMENT IF NOT TESTING ===
-            # self.atm_err0 = self.atm_err_ampl_pv.get(timeout = 1.0)
-            # self.atm_err2 = self.atm_err_flt_pos_fs_pv.get(timeout = 1.0) + self.flt_pos_offset
-            # ==== END ===
             # check if filtering parameters have been updated
             if (self.bad_count > 9):
                 self.pull_filter_limits()
                 self.flt_pos_offset = self.flt_pos_offset_pv.get(timeout=1.0)
                 self.bad_count = 0
             # update tracking PVs
-            # === COMMENT IF TESTING ===
             self.curr_ampl_pv.put(value=self.atm_err_amp, timeout=1.0)
             self.curr_fwhm_pv.put(value=self.atm_err_fwhm, timeout=1.0)
             self.curr_flt_pos_fs_pv.put(value=self.curr_flt_pos_fs, timeout=1.0)
-            # === END ===
-            # === COMMENT IF NOT TESTING ===
-            # self.curr_ampl_pv.put(value=self.atm_err0, timeout=1.0)
-            # self.curr_flt_pos_fs_pv.put(value=self.atm_err2, timeout=1.0)
-            # === END ===
             # ============= check and update filter state ==============
             self.filter_state = 0  # 0: passes all filter conditions
             if not (self.atm_err_amp > self.ampl_min): self.filter_state = 1  # amplitude too low
@@ -166,20 +144,13 @@ class drift_correction():
             # if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
             if not (round(self.txt_pv.get(timeout=1.0), 1) == self.txt_prev): self.filter_state = 8  # txt stage is moving
             self.filter_state_pv.put(value=self.filter_state, timeout=1.0)  # update filter state
-            if (self.filter_state == 0):  # COMMENT IF TESTING
-            # if (self.atm_err0 > self.ampl_min) and (self.atm_err0 < self.ampl_max) and (self.atm_err2 > self.pos_fs_min) and (self.atm_err2 < self.pos_fs_max) and (self.atm_err2 != self.flt_pos_fs):  # COMMENT IF NOT TESTING
+            if (self.filter_state == 0):
             # if True:  # DEBUG LINE - bypasses all filtering
-                # === COMMENT IF TESTING ===
                 self.ampl = self.atm_err_amp  # unpack ampl filter parameter
                 self.fwhm = self.atm_err_fwhm  # unpack fwhm filter parameter
                 self.flt_pos_fs = self.curr_flt_pos_fs
                 self.ampl_vals.append(self.ampl)
                 self.fwhm_vals.append(self.fwhm)
-                # === END ===
-                # === COMMENT IF NOT TESTING ===
-                # self.ampl = self.atm_err0
-                # self.flt_pos_fs = self.atm_err2
-                # === END ===
                 self.error_vals.append(self.flt_pos_fs)
                 self.bad_count = 0
             else:
@@ -193,7 +164,7 @@ class drift_correction():
         # Check for average mode
         if (self.avg_mode == 1):  # block averaging
             self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)
             self.avg_error = sum(self.error_vals) / len(self.error_vals)
             # clear deques completely for next iteration
             self.ampl_vals.clear()
@@ -201,7 +172,7 @@ class drift_correction():
             self.error_vals.clear()
         elif (self.avg_mode == 2):  # moving average
             self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)
             self.avg_error = sum(self.error_vals) / len(self.error_vals)
             # remove oldest element from deques
             self.ampl_vals.popleft()
@@ -210,7 +181,7 @@ class drift_correction():
         else:  # decaying median filter
             # first, calculate moving average for amplitude and FWHM
             self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
-            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)  # COMMENT THIS LINE IF TESTING
+            self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)
             # then calculate decaying median position
             self.decay_factor = self.decay_factor_pv.get(timeout=1.0)
             current_size = len(self.error_vals)  # Use actual deque size
@@ -233,8 +204,8 @@ class drift_correction():
         # ======= updates PVs & apply correction =================
         # update average value PVs of filter parameters and error
         self.ampl_pv.put(value=self.avg_ampl, timeout=1.0)
-        self.fwhm_pv.put(value=self.avg_fwhm, timeout=1.0)  # COMMENT THIS LINE IF TESTING
-        # self.flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)
+        self.fwhm_pv.put(value=self.avg_fwhm, timeout=1.0)
+        # self.flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)  # moved to after correction calculation
         # update control parameters and apply correction
         self.fb_direction = self.fb_direction_pv.get(timeout=1.0)
         self.fb_gain = self.fb_gain_pv.get(timeout=1.0)
