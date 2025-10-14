@@ -51,36 +51,41 @@ class drift_correction():
 
         # script control PVs
         self.heartbeat_pv = Pv('LAS:UNDS:FLOAT:41')
-        self.on_off_pv = Pv('LAS:UNDS:FLOAT:67')  # enable/disable drift correction
-        self.avg_mode_pv = Pv(str(self.hutch_config['avg_mode_pv']))  # select averaging mode
-        self.decay_factor_pv = Pv(str(self.hutch_config['decay_factor_pv']))
-        self.fb_direction_pv = Pv(str(self.hutch_config['fb_direction_pv']))  # feedback direction
-        self.fb_gain_pv = Pv(str(self.hutch_config['fb_gain_pv']))
-        self.sample_size_pv = Pv(str(self.hutch_config['sample_size_pv']))  # averaging sample size
+        self.on_off_pv = Pv('LAS:UNDS:FLOAT:67')  # enable/disable correction
         self.atm_fb_pv = Pv('LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET')  # ATM feedback hook
+        self.fb_direction_pv = Pv(str(self.hutch_config['fb_direction_pv']))
+        self.fb_gain_pv = Pv(str(self.hutch_config['fb_gain_pv']))
+        self.flt_pos_offset_pv = Pv(str(self.hutch_config['flt_pos_offset_pv']))  # fs
+
+        # averaging PVs
+        self.sample_size_pv = Pv(str(self.hutch_config['sample_size_pv']))
+        self.avg_mode_pv = Pv(str(self.hutch_config['avg_mode_pv']))
+        self.decay_factor_pv = Pv(str(self.hutch_config['decay_factor_pv']))
 
         # filter PVs
         self.ampl_min_pv = Pv(str(self.hutch_config['ampl_min_pv']))
         self.ampl_max_pv = Pv(str(self.hutch_config['ampl_max_pv']))
         self.curr_ampl_pv = Pv(str(self.hutch_config['curr_ampl_pv']))
-        self.ampl_pv = Pv(str(self.hutch_config['ampl_pv']))  # average amplitude over sample period
+        # average amplitude over sample period
+        self.ampl_pv = Pv(str(self.hutch_config['ampl_pv']))
         self.fwhm_min_pv = Pv(str(self.hutch_config['fwhm_min_pv']))
         self.fwhm_max_pv = Pv(str(self.hutch_config['fwhm_max_pv']))
         self.curr_fwhm_pv = Pv(str(self.hutch_config['curr_fwhm_pv']))
-        self.fwhm_pv = Pv(str(self.hutch_config['fwhm_pv']))  # average FWHM over sample period
+        # average FWHM over sample period
+        self.fwhm_pv = Pv(str(self.hutch_config['fwhm_pv']))
         self.pos_fs_min_pv = Pv(str(self.hutch_config['pos_fs_min_pv']))
         self.pos_fs_max_pv = Pv(str(self.hutch_config['pos_fs_max_pv']))
         self.curr_flt_pos_fs_pv = Pv(str(self.hutch_config['curr_flt_pos_fs_pv']))
-        self.flt_pos_fs_pv = Pv(str(self.hutch_config['flt_pos_fs_pv']))  # average position in fs over sample period
-        self.flt_pos_offset_pv = Pv(str(self.hutch_config['flt_pos_offset_pv']))  # offset in fs
-        self.txt_pv = Pv(str(self.hutch_config['txt_pv']))  # TXT stage position
+        # tracks correction to be applied
+        self.flt_pos_fs_pv = Pv(str(self.hutch_config['flt_pos_fs_pv']))
+        # TXT stage position
+        self.txt_pv = Pv(str(self.hutch_config['txt_pv']))
         self.filter_state_pv = Pv(str(self.hutch_config['filter_state_pv']))
 
         # parameter and container initialization
         self.ampl_vals = deque()
         self.fwhm_vals = deque()
         self.error_vals = deque()
-        self.heartbeat_counter = 0
         self.max_fill_iterations = 500  # buffer for timeout
 
     def pull_filter_limits(self):
@@ -98,7 +103,8 @@ class drift_correction():
         self.atm_err_pos_ps = self.atm_err[1]  # pos ps
         self.atm_err_amp = self.atm_err[2]  # amplitude
         self.atm_err_fwhm = self.atm_err[5]  # FWHM
-        self.flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset
+        # calculate offset adjusted position in fs
+        # self.flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset
 
     def correct(self):
         """filters data and applies correction"""
@@ -108,14 +114,17 @@ class drift_correction():
             print(f"[DEBUG] Hutch change detected, raising exception")
             raise hutch_selection_changed
         # === Update values ===
-        self.flt_pos_offset = self.flt_pos_offset_pv.get(timeout=1.0)  # position offset
+        # get latest position offset
+        self.flt_pos_offset = self.flt_pos_offset_pv.get(timeout=1.0)
         self.pull_atm_values()
-        self.atm_fb = self.atm_fb_pv.get(timeout=60.0)  # ATM FB value
+        # get current ATM FB hook value
+        self.atm_fb = self.atm_fb_pv.get(timeout=60.0)
         self.pull_filter_limits()
+        # get TXT position
         self.txt_prev = round(self.txt_pv.get(timeout=1.0), 1)
         self.bad_count = 0  # track how many times filter thresholds not met
-        self.sample_size = self.sample_size_pv.get(timeout=1.0)  # sample size
-        # ============== loop for filling buffer ======================
+        self.sample_size = self.sample_size_pv.get(timeout=1.0)
+        # ============== loop for filling sample ======================
         # Initialize safety counter
         loop_counter = 0
         while (len(self.error_vals) < self.sample_size):
@@ -125,7 +134,7 @@ class drift_correction():
                 raise buffer_fill_timeout
             # get current PV values
             self.pull_atm_values()
-            self.curr_flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset  # calcuate offset adjusted position in fs
+            self.curr_flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset
             # check if filtering parameters have been updated
             if (self.bad_count > 9):
                 self.pull_filter_limits()
@@ -164,6 +173,7 @@ class drift_correction():
         if len(self.ampl_vals) == 0:
             return  # Skip this iteration if no valid data
         # Check for average mode
+        # ONLY block averaging has been tested
         if (self.avg_mode == 1):  # block averaging
             self.avg_ampl = sum(self.ampl_vals) / len(self.ampl_vals)
             self.avg_fwhm = sum(self.fwhm_vals) / len(self.fwhm_vals)
@@ -212,11 +222,14 @@ class drift_correction():
         self.fb_direction = self.fb_direction_pv.get(timeout=1.0)
         self.fb_gain = self.fb_gain_pv.get(timeout=1.0)
         self.on_off = self.on_off_pv.get(timeout=1.0)
-        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain  # scale to ns, direction, and gain
-        self.flt_pos_fs_pv.put(value=(self.correction * 1000000), timeout=1.0)  # correction to PV for logging
+        # scale to ns, direction, and gain
+        self.correction = (self.avg_error / 1000000) * self.fb_direction * self.fb_gain
+        # correction to PV for logging
+        self.flt_pos_fs_pv.put(value=(self.correction * 1000000), timeout=1.0)
         self.atm_fb = self.atm_fb + self.correction  # update ATM FB
-        if (self.on_off == 1) and ((abs(self.correction) < 0.001)):  # check drift correction on and <1 ps
-            self.atm_fb_pv.put(value=self.atm_fb, timeout=1.0)  # write to correction PV
+        # only write if drift correction enabled and <1 ps
+        if (self.on_off == 1) and ((abs(self.correction) < 0.001)):
+            self.atm_fb_pv.put(value=self.atm_fb, timeout=1.0)
         else:
             pass
 
