@@ -79,16 +79,20 @@ class DriftCorrectionDisplay(Display):
         current_layout = QGridLayout(current_group)
         # Current amplitude
         current_layout.addWidget(QLabel("Average Amplitude:"), 0, 0)
-        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:36", 3)
+        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:36", 4)
         current_layout .addWidget(curr_ampl_label, 0, 1)
         # Current FWHM
         current_layout.addWidget(QLabel("Average FWHM:"), 1, 0)
         curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:32", 4)
         current_layout.addWidget(curr_fwhm_label, 1, 1)
-        # Current position
-        current_layout.addWidget(QLabel("Correction (fs):"), 2, 0)
-        curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:28", 1)
+        # Current correction
+        current_layout.addWidget(QLabel("Position (fs):"), 2, 0)
+        curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:29", 1)
         current_layout.addWidget(curr_pos_label, 2, 1)
+        # Current correction
+        current_layout.addWidget(QLabel("Correction (fs):"), 3, 0)
+        curr_corr_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:28", 1)
+        current_layout.addWidget(curr_corr_label, 3, 1)
         filter_layout.addWidget(current_group)
 
         # Amplitude filtering group
@@ -96,18 +100,18 @@ class DriftCorrectionDisplay(Display):
         ampl_layout = QGridLayout(ampl_group)
         # Min amplitude
         ampl_layout.addWidget(QLabel("Min Amplitude:"), 0, 0)
-        ampl_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:39", 3)
+        ampl_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:39", 4)
         ampl_layout.addWidget(ampl_min_edit, 0, 1)
         ampl_layout.addWidget(QLabel("Current:"), 0, 2)
-        ampl_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:39", 3)
+        ampl_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:39", 4)
         ampl_min_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         ampl_layout.addWidget(ampl_min_readback, 0, 3)
         # Max amplitude  
         ampl_layout.addWidget(QLabel("Max Amplitude:"), 1, 0)
-        ampl_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:38", 3)
+        ampl_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:38", 2)
         ampl_layout.addWidget(ampl_max_edit, 1, 1)
         ampl_layout.addWidget(QLabel("Current:"), 1, 2)
-        ampl_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:38", 3)
+        ampl_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:38", 2)
         ampl_max_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         ampl_layout.addWidget(ampl_max_readback, 1, 3)
         filter_layout.addWidget(ampl_group)
@@ -117,18 +121,18 @@ class DriftCorrectionDisplay(Display):
         fwhm_layout = QGridLayout(fwhm_group)
         # Min FWHM
         fwhm_layout.addWidget(QLabel("Min FWHM:"), 0, 0)
-        fwhm_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:35", 3)
+        fwhm_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:35", 4)
         fwhm_layout.addWidget(fwhm_min_edit, 0, 1)
         fwhm_layout.addWidget(QLabel("Current:"), 0, 2)
-        fwhm_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:35", 3)
+        fwhm_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:35", 4)
         fwhm_min_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         fwhm_layout.addWidget(fwhm_min_readback, 0, 3)
         # Max FWHM
         fwhm_layout.addWidget(QLabel("Max FWHM:"), 1, 0)
-        fwhm_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:34", 3)
+        fwhm_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:34", 2)
         fwhm_layout.addWidget(fwhm_max_edit, 1, 1)
         fwhm_layout.addWidget(QLabel("Current:"), 1, 2)
-        fwhm_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:34", 3)
+        fwhm_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:34", 2)
         fwhm_max_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         fwhm_layout.addWidget(fwhm_max_readback, 1, 3)
         filter_layout.addWidget(fwhm_group)
@@ -252,10 +256,10 @@ class DriftCorrectionDisplay(Display):
         fb_layout.addWidget(fb_dir_readback, 0, 3)
         # FB Gain
         fb_layout.addWidget(QLabel("FB Gain:"), 1, 0)
-        fb_gain_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:21", 4)
+        fb_gain_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:21", 2)
         fb_layout.addWidget(fb_gain_edit, 1, 1)
         fb_layout.addWidget(QLabel("Current:"), 1, 2)
-        fb_gain_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:21", 4)
+        fb_gain_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:21", 2)
         fb_gain_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         fb_layout.addWidget(fb_gain_readback, 1, 3)
         system_layout.addWidget(fb_group)
