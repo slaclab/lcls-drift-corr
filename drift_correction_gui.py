@@ -1,23 +1,28 @@
-# drift_correction_gui.py
+# drift_correction_gui.py (chemRIXS)
+# EPICS import: suppresses epicscorelibs.path.pyepics warning
+import epicscorelibs.path.pyepics
+import epics.ca
+
+# suppresses Qt WebEngine context warning
+from qtpy.QtCore import Qt
+from qtpy.QtWebEngineWidgets import QWebEngineView
+
 from pydm import Display
-from pydm.widgets import PyDMLabel, PyDMLineEdit, PyDMCheckbox, PyDMPushButton, PyDMEnumComboBox
+from pydm.widgets import PyDMLabel, PyDMLineEdit, PyDMCheckbox
 from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QGridLayout, QTabWidget, QWidget, QLabel, QPushButton, QMessageBox
 from qtpy.QtCore import Qt
 
 import subprocess
 import psutil
 import os
-import signal
 import time
-from qtpy.QtWidgets import QPushButton
-from qtpy.QtCore import QTimer
 
 class DriftCorrectionDisplay(Display):
     def __init__(self, parent=None, args=None, macros=None):
         super(DriftCorrectionDisplay, self).__init__(parent=parent, args=args, macros=macros)
 
-        self.setWindowTitle("Drift Correction Control Panel")
-        self.setMinimumSize(1000, 700)  # Made taller for script controls
+        self.setWindowTitle("ChemRIXS Drift Correction Control Panel")
+        self.setMinimumSize(1000, 700)
 
         # Script management variables
         self.script_process = None
@@ -73,17 +78,21 @@ class DriftCorrectionDisplay(Display):
         current_group = QGroupBox("Current Values")
         current_layout = QGridLayout(current_group)
         # Current amplitude
-        current_layout.addWidget(QLabel("Current Amplitude:"), 0, 0)
-        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:55", 3)
+        current_layout.addWidget(QLabel("Average Amplitude:"), 0, 0)
+        curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:60", 4)
         current_layout .addWidget(curr_ampl_label, 0, 1)
         # Current FWHM
-        current_layout.addWidget(QLabel("Current FWHM:"), 1, 0)
-        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:47", 4)
+        current_layout.addWidget(QLabel("Average FWHM:"), 1, 0)
+        curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:46", 4)
         current_layout.addWidget(curr_fwhm_label, 1, 1)
         # Current position
         current_layout.addWidget(QLabel("Current Position (fs):"), 2, 0)
         curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:54", 1)
         current_layout.addWidget(curr_pos_label, 2, 1)
+        # Current correction
+        current_layout.addWidget(QLabel("Correction (fs):"), 3, 0)
+        curr_corr_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:62", 1)
+        current_layout.addWidget(curr_corr_label, 3, 1)
         filter_layout.addWidget(current_group)
 
         # Amplitude filtering group
@@ -91,18 +100,18 @@ class DriftCorrectionDisplay(Display):
         ampl_layout = QGridLayout(ampl_group)
         # Min amplitude
         ampl_layout.addWidget(QLabel("Min Amplitude:"), 0, 0)
-        ampl_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:63", 3)
+        ampl_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:63", 4)
         ampl_layout.addWidget(ampl_min_edit, 0, 1)
         ampl_layout.addWidget(QLabel("Current:"), 0, 2)
-        ampl_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:63", 3)
+        ampl_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:63", 4)
         ampl_min_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         ampl_layout.addWidget(ampl_min_readback, 0, 3)
         # Max amplitude  
         ampl_layout.addWidget(QLabel("Max Amplitude:"), 1, 0)
-        ampl_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:64", 3)
+        ampl_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:64", 2)
         ampl_layout.addWidget(ampl_max_edit, 1, 1)
         ampl_layout.addWidget(QLabel("Current:"), 1, 2)
-        ampl_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:64", 3)
+        ampl_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:64", 2)
         ampl_max_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         ampl_layout.addWidget(ampl_max_readback, 1, 3)
         filter_layout.addWidget(ampl_group)
@@ -112,18 +121,18 @@ class DriftCorrectionDisplay(Display):
         fwhm_layout = QGridLayout(fwhm_group)
         # Min FWHM
         fwhm_layout.addWidget(QLabel("Min FWHM:"), 0, 0)
-        fwhm_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:49", 3)
+        fwhm_min_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:49", 4)
         fwhm_layout.addWidget(fwhm_min_edit, 0, 1)
         fwhm_layout.addWidget(QLabel("Current:"), 0, 2)
-        fwhm_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:49", 3)
+        fwhm_min_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:49", 4)
         fwhm_min_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         fwhm_layout.addWidget(fwhm_min_readback, 0, 3)
         # Max FWHM
         fwhm_layout.addWidget(QLabel("Max FWHM:"), 1, 0)
-        fwhm_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:48", 3)
+        fwhm_max_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:48", 2)
         fwhm_layout.addWidget(fwhm_max_edit, 1, 1)
         fwhm_layout.addWidget(QLabel("Current:"), 1, 2)
-        fwhm_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:48", 3)
+        fwhm_max_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:48", 2)
         fwhm_max_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         fwhm_layout.addWidget(fwhm_max_readback, 1, 3)
         filter_layout.addWidget(fwhm_group)
@@ -156,6 +165,7 @@ class DriftCorrectionDisplay(Display):
         pos_offset_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         pos_layout.addWidget(pos_offset_readback, 2, 3)
         filter_layout.addWidget(pos_group)
+
         filter_layout.addStretch()
 
         tabs.addTab(filter_widget, "Filtering")
@@ -196,21 +206,15 @@ class DriftCorrectionDisplay(Display):
         self.check_button = QPushButton("Check Status")
         self.check_button.clicked.connect(self.manual_status_check)  # Use a wrapper method
         script_layout.addWidget(self.check_button, 1, 3)
-        
         # Add Hutch selector label and line edit with readback after buttons (e.g. row 2 or next row)
         row = 2  # For example, put in row 2; adjust based on existing layout
-    
         script_layout.addWidget(QLabel("Hutch Value (0=cRIXS, 1=qRIXS):"), row, 0)
-    
         hutch_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:40", precision=0)
         script_layout.addWidget(hutch_edit, row, 1)
-    
         script_layout.addWidget(QLabel("Current:"), row, 2)
-    
         hutch_readback = self.create_decimal_label("ca://LAS:UNDS:FLOAT:40", precision=0)
         hutch_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         script_layout.addWidget(hutch_readback, row, 3)
-        
         system_layout.addWidget(script_group)
 
         # Status group
@@ -288,12 +292,14 @@ class DriftCorrectionDisplay(Display):
         decay_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         avg_layout.addWidget(decay_readback, 2, 3)
         system_layout.addWidget(avg_group)
+
         system_layout.addStretch()
 
         tabs.addTab(system_widget, "Controls")
 
     def start_script(self):
         """Start the drift correction script"""
+        print("=== START SCRIPT CALLED ===")
         try:
             # Force check
             running, pid = self.is_script_running()
@@ -326,8 +332,7 @@ class DriftCorrectionDisplay(Display):
                 try:
                     if (proc.info['cmdline'] and 
                         'drift_correction_main.py' in ' '.join(proc.info['cmdline']) and
-                        proc.info['status'] not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]):         
-                        print(f"Found process to kill: PID {proc.pid}")
+                        proc.info['status'] not in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]):
                         self.show_message(f"Stopping process PID: {proc.pid}")
                         proc.terminate()
                         try:
@@ -336,21 +341,15 @@ class DriftCorrectionDisplay(Display):
                             proc.kill()
                             proc.wait()
                         killed_any = True
-                        print(f"Process {proc.pid} killed successfully")
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
             if not killed_any:
-                print("No running script found")
                 self.show_message("No running script found to stop!")
             else:
-                print("Script stopped successfully")
                 self.show_message("Script stopped successfully")
             self.script_process = None
-            print("About to call update_script_status...")
             self.update_script_status()
-            print("update_script_status called")
         except Exception as e:
-            print(f"Error in stop_script: {e}")
             self.show_message(f"Failed to stop script: {e}")
         time.sleep(2)  # Wait a moment
         self.update_script_status()
@@ -370,7 +369,6 @@ class DriftCorrectionDisplay(Display):
             running, pid = self.is_script_running()
             print(f"Script running: {running}, PID: {pid}")
             # Try to update labels with debug
-            print("Updating script status label...")
             if running:
                 self.script_status_label.setText("RUNNING")
                 self.script_status_label.setStyleSheet(
@@ -393,7 +391,6 @@ class DriftCorrectionDisplay(Display):
             # Force repaint
             self.script_status_label.repaint()
             self.pid_label.repaint()
-            print("Label updates complete")
         except Exception as e:
             print(f"Error in manual_status_check: {e}")
             import traceback
@@ -401,25 +398,20 @@ class DriftCorrectionDisplay(Display):
 
     def update_script_status(self):
         """Update the script status display"""
-        # print("=== UPDATE_SCRIPT_STATUS CALLED ===")
         try:
             running, pid = self.is_script_running()
-            # print(f"Status check result: running={running}, pid={pid}")
             if running:
-                # print("Setting status to RUNNING")
                 self.script_status_label.setText("RUNNING")
                 self.script_status_label.setStyleSheet(
                     "padding: 5px; border: 1px solid #ccc; background-color: #90EE90; font-weight: bold;"
                 )
                 self.pid_label.setText(str(pid))
             else:
-                # print("Setting status to STOPPED")
                 self.script_status_label.setText("STOPPED")
                 self.script_status_label.setStyleSheet(
                     "padding: 5px; border: 1px solid #ccc; background-color: #FFB6C1; font-weight: bold;"
                 )
                 self.pid_label.setText("--")
-            # print(f"Labels updated - Status: {self.script_status_label.text()}, PID: {self.pid_label.text()}")
         except Exception as e:
             print(f"Error in update_script_status: {e}")
             import traceback
@@ -436,10 +428,6 @@ class DriftCorrectionDisplay(Display):
                     # Check if cmdline exists and contains our script
                     if proc.info['cmdline']:
                         cmdline_str = ' '.join(proc.info['cmdline'])
-                        # Debug: print what processes we're finding
-                        # if 'python' in cmdline_str.lower():
-                        #     print(f"[DEBUG] Found python process: {cmdline_str}")
-                        # More specific matching - look for exact script name and python
                         if ('python' in cmdline_str.lower() and
                             'drift_correction_main.py' in cmdline_str and
                             proc.info['status'] in [psutil.STATUS_RUNNING, psutil.STATUS_SLEEPING]):
