@@ -10,12 +10,12 @@ from qtpy.QtWebEngineWidgets import QWebEngineView
 from pydm import Display
 from pydm.widgets import PyDMLabel, PyDMLineEdit, PyDMCheckbox
 from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QGroupBox, QGridLayout, QTabWidget, QWidget, QLabel, QPushButton, QMessageBox
-from qtpy.QtCore import Qt
 
 import subprocess
 import psutil
 import os
 import time
+
 
 class DriftCorrectionDisplay(Display):
     def __init__(self, parent=None, args=None, macros=None):
@@ -179,14 +179,14 @@ class DriftCorrectionDisplay(Display):
         script_group = QGroupBox("Script Control")
         script_layout = QGridLayout(script_group)
         # Script status display
-        script_layout.addWidget(QLabel("Script Status:"), 0, 0)  # Static label is fine
-        self.script_status_label = QLabel("Unknown")  # Dynamic label
+        script_layout.addWidget(QLabel("Script Status:"), 0, 0)
+        self.script_status_label = QLabel("Unknown")
         self.script_status_label.setMinimumSize(100, 30)
         self.script_status_label.setStyleSheet("padding: 5px; border: 1px solid #ccc; background-color: #f0f0f0;")
         script_layout.addWidget(self.script_status_label, 0, 1)
         # Process ID display 
-        script_layout.addWidget(QLabel("Process ID:"), 0, 2)  # Static label is fine
-        self.pid_label = QLabel("--")  # Dynamic label
+        script_layout.addWidget(QLabel("Process ID:"), 0, 2)
+        self.pid_label = QLabel("--")
         self.pid_label.setMinimumSize(60, 30)
         self.pid_label.setStyleSheet("padding: 5px; border: 1px solid #ccc; background-color: #f0f0f0;")
         script_layout.addWidget(self.pid_label, 0, 3)
@@ -204,9 +204,9 @@ class DriftCorrectionDisplay(Display):
         self.restart_button.setStyleSheet("background-color: #FFD700; font-weight: bold;")
         script_layout.addWidget(self.restart_button, 1, 2)
         self.check_button = QPushButton("Check Status")
-        self.check_button.clicked.connect(self.manual_status_check)  # Use a wrapper method
+        self.check_button.clicked.connect(self.manual_status_check)
         script_layout.addWidget(self.check_button, 1, 3)
-        # Add Hutch selector label and line edit with readback after buttons (e.g. row 2 or next row)
+        # Add Hutch selector label and line edit with readback
         row = 2  # For example, put in row 2; adjust based on existing layout
         script_layout.addWidget(QLabel("Hutch Value (0=cRIXS, 1=qRIXS):"), row, 0)
         hutch_edit = self.create_decimal_lineedit("ca://LAS:UNDS:FLOAT:40", precision=0)
@@ -315,7 +315,7 @@ class DriftCorrectionDisplay(Display):
             self.script_process = subprocess.Popen([
                 'python', script_full_path
             ], cwd=os.path.dirname(script_full_path))
-            self.show_message(f"Script started with PID: {self.script_process.pid}")
+            self.show_message(f"Script started, PID: {self.script_process.pid}")
             self.update_script_status()
         except Exception as e:
             self.show_message(f"Failed to start script: {e}")
@@ -443,7 +443,7 @@ class DriftCorrectionDisplay(Display):
 
     def show_message(self, message):
         """Show a status message (you could also use a status bar or popup)"""
-        print(f"[GUI] {message}")  # For now, just print. You could add a status bar later
+        print(f"[GUI] {message}")
 
     def closeEvent(self, event):
         """Clean up when GUI is closed"""
@@ -464,6 +464,7 @@ class DriftCorrectionDisplay(Display):
         else:
             event.accept()  # No script running, close normally
 
+
 def main():
     import sys
     from pydm import PyDMApplication
@@ -472,6 +473,7 @@ def main():
     display = DriftCorrectionDisplay()
     display.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
