@@ -44,7 +44,8 @@ class drift_correction():
 
         # Values from ATM timetool PV
         # only one should be uncommented at a time
-        self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
+        self.atm_err_pv = Pv(str(self.hutch_config['ttall_pv']))  # from json
+        # self.atm_err_pv = Pv('RIX:TIMETOOL:TTALL')  # timetool PV
         # self.atm_err_pv = Pv('RIX:QRIX:ALV:01:TT:TTALL')  # Alvium TTALL
         # self.atm_err_pv = Pv('CRIX:TIMETOOL:TTALL')  # cRIXS timetool PV
         # self.atm_err_pv = Pv('QRIX:TIMETOOL:TTALL')  # qRIXS timetool PV
@@ -52,7 +53,8 @@ class drift_correction():
         # script control PVs
         self.heartbeat_pv = Pv('LAS:UNDS:FLOAT:41')
         self.on_off_pv = Pv('LAS:UNDS:FLOAT:67')  # enable/disable correction
-        self.atm_fb_pv = Pv('LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET')  # ATM feedback hook
+        # ATM feedback hook to adjust laser timing
+        self.atm_fb_pv = Pv('LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET')
         self.fb_direction_pv = Pv(str(self.hutch_config['fb_direction_pv']))
         self.fb_gain_pv = Pv(str(self.hutch_config['fb_gain_pv']))
         self.flt_pos_offset_pv = Pv(str(self.hutch_config['flt_pos_offset_pv']))  # fs
@@ -111,7 +113,7 @@ class drift_correction():
         # Check for hutch value change
         self.hutch_selector_new = self.hutch_selector_pv.get(timeout=1.0)
         if (self.hutch_selector_new != self.hutch_selector):  # hutch change
-            print(f"[DEBUG] Hutch change detected, raising exception")
+            print("[DEBUG] Hutch change detected, raising exception")
             raise hutch_selection_changed
         # === Update values ===
         # get latest position offset
@@ -130,7 +132,6 @@ class drift_correction():
         while (len(self.error_vals) < self.sample_size):
             loop_counter += 1
             if loop_counter > self.max_fill_iterations:
-                print(f"[WARN] Buffer fill timeout at {loop_counter} iterations. Exiting correct().")
                 raise buffer_fill_timeout
             # get current PV values
             self.pull_atm_values()
@@ -143,18 +144,26 @@ class drift_correction():
             # update tracking PVs
             self.curr_ampl_pv.put(value=self.atm_err_amp, timeout=1.0)
             self.curr_fwhm_pv.put(value=self.atm_err_fwhm, timeout=1.0)
-            self.curr_flt_pos_fs_pv.put(value=self.curr_flt_pos_fs, timeout=1.0)
+            # self.curr_flt_pos_fs_pv.put(value=self.curr_flt_pos_fs, timeout=1.0)
             # ============= check and update filter state ==============
             self.filter_state = 0  # 0: passes all filter conditions
-            if not (self.atm_err_amp > self.ampl_min): self.filter_state = 1  # amplitude too low
-            if not (self.atm_err_amp < self.ampl_max): self.filter_state = 2  # amplitude too high
-            if not (self.atm_err_fwhm > self.fwhm_min): self.filter_state = 3  # FWHM too low
-            if not (self.atm_err_fwhm < self.fwhm_max): self.filter_state = 4  # FWHM too high
-            if not (self.curr_flt_pos_fs > self.pos_fs_min): self.filter_state = 5  # position too low
-            if not (self.curr_flt_pos_fs < self.pos_fs_max): self.filter_state = 6  # position too high
+            if not (self.atm_err_amp > self.ampl_min):
+                self.filter_state = 1  # amplitude too low
+            if not (self.atm_err_amp < self.ampl_max):
+                self.filter_state = 2  # amplitude too high
+            if not (self.atm_err_fwhm > self.fwhm_min):
+                self.filter_state = 3  # FWHM too low
+            if not (self.atm_err_fwhm < self.fwhm_max):
+                self.filter_state = 4  # FWHM too high
+            if not (self.curr_flt_pos_fs > self.pos_fs_min):
+                self.filter_state = 5  # position too low
+            if not (self.curr_flt_pos_fs < self.pos_fs_max):
+                self.filter_state = 6  # position too high
             # if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
-            if not (round(self.txt_pv.get(timeout=1.0), 1) == self.txt_prev): self.filter_state = 8  # txt stage is moving
-            self.filter_state_pv.put(value=self.filter_state, timeout=1.0)  # update filter state
+            if not (round(self.txt_pv.get(timeout=1.0), 1) == self.txt_prev):
+                self.filter_state = 8  # txt stage is moving
+            # update filter state
+            self.filter_state_pv.put(value=self.filter_state, timeout=1.0)
             if (self.filter_state == 0):
             # if True:  # DEBUG LINE - bypasses all filtering
                 self.ampl = self.atm_err_amp  # unpack ampl filter parameter
@@ -166,7 +175,8 @@ class drift_correction():
                 self.bad_count = 0
             else:
                 self.bad_count += 1
-            self.txt_prev = round(self.txt_pv.get(timeout=1.0), 1)  # update txt position for filtering
+            # update txt position for filtering
+            self.txt_prev = round(self.txt_pv.get(timeout=1.0), 1)
         # ============= averaging ===============
         self.avg_mode = self.avg_mode_pv.get(timeout=1.0)
         # Check if we have any data to average
@@ -205,7 +215,8 @@ class drift_correction():
             self.target_weight = self.total_weight / 2
             # set to a default value in case loop doesn't execute
             self.avg_error = self.error_vals[-1] if len(self.error_vals) > 0 else 0
-            for value, cum_weight in zip([val[0] for val in self.sorted_values], self.cumulative_weights):  # loop through until target weight reached
+            # loop through until target weight reached
+            for value, cum_weight in zip([val[0] for val in self.sorted_values], self.cumulative_weights):
                 if cum_weight >= self.target_weight:
                     self.avg_error = value
                     break
@@ -217,7 +228,8 @@ class drift_correction():
         # update average value PVs of filter parameters and error
         self.ampl_pv.put(value=self.avg_ampl, timeout=1.0)
         self.fwhm_pv.put(value=self.avg_fwhm, timeout=1.0)
-        # self.flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)  # moved to after correction calculation
+        # put average error to PV
+        self.curr_flt_pos_fs_pv.put(value=self.avg_error, timeout=1.0)
         # update control parameters and apply correction
         self.fb_direction = self.fb_direction_pv.get(timeout=1.0)
         self.fb_gain = self.fb_gain_pv.get(timeout=1.0)
@@ -248,11 +260,11 @@ def run():
                 correction.correct()
                 time.sleep(0.1)
             except hutch_selection_changed:
-                print("[INFO] Hutch manually changed. Reinitializing correction.")
+                print("[INFO] Hutch selection changed.")
                 correction = drift_correction()  # re-initialize
                 correction.atm_fb_pv.put(value=0, timeout=1.0)
             except buffer_fill_timeout:
-                print("[WARN] filter timeout.")
+                print("[INFO] filter timeout.")
                 # Short pause before retrying
                 time.sleep(1.0)
             except Exception as e:
