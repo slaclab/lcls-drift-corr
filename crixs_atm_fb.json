@@ -1,4 +1,5 @@
 {
+    "ttall_pv": "CRIX:TIMETOOL:TTALL",
     "ampl_min_pv": "LAS:UNDS:FLOAT:63",
     "ampl_max_pv": "LAS:UNDS:FLOAT:64",
     "curr_ampl_pv": "LAS:UNDS:FLOAT:55",

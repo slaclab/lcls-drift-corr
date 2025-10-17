@@ -1,4 +1,5 @@
 {
+    "ttall_pv": "QRIX:TIMETOOL:TTALL",
     "ampl_min_pv": "LAS:UNDS:FLOAT:39",
     "ampl_max_pv": "LAS:UNDS:FLOAT:38",
     "curr_ampl_pv": "LAS:UNDS:FLOAT:37",
@@ -19,4 +20,4 @@
     "fb_direction_pv": "LAS:UNDS:FLOAT:22",
     "fb_gain_pv": "LAS:UNDS:FLOAT:21",
     "sample_size_pv": "LAS:UNDS:FLOAT:19"
-}   
+}
