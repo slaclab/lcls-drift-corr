@@ -102,9 +102,14 @@ class drift_correction():
     def pull_atm_values(self):
         """pulls current atm values"""
         self.atm_err = self.atm_err_pv.get(timeout=60.0)
+        # standard order
         self.atm_err_pos_ps = self.atm_err[1]  # pos ps
         self.atm_err_amp = self.atm_err[2]  # amplitude
         self.atm_err_fwhm = self.atm_err[5]  # FWHM
+        # piranha special
+        # self.atm_err_pos_ps = self.atm_err[2]  # pos ps
+        # self.atm_err_amp = self.atm_err[0]  # amplitude
+        # self.atm_err_fwhm = self.atm_err[3]  # FWHM
         # calculate offset adjusted position in fs
         # self.flt_pos_fs = (self.atm_err_pos_ps * 1000) - self.flt_pos_offset
 
@@ -159,7 +164,8 @@ class drift_correction():
                 self.filter_state = 5  # position too low
             if not (self.curr_flt_pos_fs < self.pos_fs_max):
                 self.filter_state = 6  # position too high
-            # if not (self.flt_pos_fs != self.curr_flt_pos_fs): self.filter_state = 7  # position the same
+            # if not (self.flt_pos_fs != self.curr_flt_pos_fs):
+            #     self.filter_state = 7  # position the same
             if not (round(self.txt_pv.get(timeout=1.0), 1) == self.txt_prev):
                 self.filter_state = 8  # txt stage is moving
             # update filter state
