@@ -75,18 +75,18 @@ class DriftCorrectionDisplay(Display):
         filter_layout = QVBoxLayout(filter_widget)
 
         # Current values group
-        current_group = QGroupBox("Current Values")
+        current_group = QGroupBox("Filtered Values")
         current_layout = QGridLayout(current_group)
         # Current amplitude
-        current_layout.addWidget(QLabel("Average Amplitude:"), 0, 0)
+        current_layout.addWidget(QLabel("Filtered Amplitude:"), 0, 0)
         curr_ampl_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:60", 4)
         current_layout .addWidget(curr_ampl_label, 0, 1)
         # Current FWHM
-        current_layout.addWidget(QLabel("Average FWHM:"), 1, 0)
+        current_layout.addWidget(QLabel("Filtered FWHM:"), 1, 0)
         curr_fwhm_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:46", 4)
         current_layout.addWidget(curr_fwhm_label, 1, 1)
         # Current position
-        current_layout.addWidget(QLabel("Current Position (fs):"), 2, 0)
+        current_layout.addWidget(QLabel("Filtered Position (fs):"), 2, 0)
         curr_pos_label = self.create_decimal_label("ca://LAS:UNDS:FLOAT:54", 1)
         current_layout.addWidget(curr_pos_label, 2, 1)
         # Current correction
@@ -165,7 +165,6 @@ class DriftCorrectionDisplay(Display):
         pos_offset_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
         pos_layout.addWidget(pos_offset_readback, 2, 3)
         filter_layout.addWidget(pos_group)
-
         filter_layout.addStretch()
 
         tabs.addTab(filter_widget, "Filtering")
@@ -237,6 +236,12 @@ class DriftCorrectionDisplay(Display):
         control_layout.addWidget(QLabel("Drift Correction:"), 0, 0)
         onoff_checkbox = PyDMCheckbox(init_channel="ca://LAS:UNDS:FLOAT:67")
         control_layout.addWidget(onoff_checkbox, 0, 1)
+        warning_label = QLabel(
+            "⚠️ Caution: Checkbox enables active feedback!"
+            " This may affect system behavior in real time."
+        )
+        warning_label.setStyleSheet("color: orange; font-weight: bold;")
+        control_layout.addWidget(warning_label, 1, 0, 1, 4)
         control_layout.addWidget(QLabel("Current:"), 0, 2)
         onoff_readback = self.create_integer_label("ca://LAS:UNDS:FLOAT:67")
         onoff_readback.setStyleSheet("background-color: #f0f0f0; border: 1px solid #ccc;")
