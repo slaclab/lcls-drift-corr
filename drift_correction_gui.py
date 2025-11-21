@@ -229,7 +229,7 @@ class DriftCorrectionDisplay(Display):
         status_layout.addWidget(heartbeat_label, 1, 1)
         # ATM feedback
         status_layout.addWidget(QLabel("ATM Feedback (ns):"), 2, 0)
-        heartbeat_label = self.create_integer_label("ca://LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET")
+        heartbeat_label = self.create_decimal_label("ca://LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET", 6)
         status_layout.addWidget(heartbeat_label, 2, 1)
         system_layout.addWidget(status_group)
 
@@ -444,7 +444,7 @@ class DriftCorrectionDisplay(Display):
                             return True, proc.pid
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
-            print("[DEBUG] No matching processes found")
+            # print("[DEBUG] No matching processes found")
             return False, None
         except Exception as e:
             print(f"[DEBUG] Error in is_script_running: {e}")
