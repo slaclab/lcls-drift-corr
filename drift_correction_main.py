@@ -273,7 +273,7 @@ def run():
                 correction = drift_correction()  # re-initialize
                 correction.atm_fb_pv.put(value=0, timeout=1.0)
             except buffer_fill_timeout:
-                print("[INFO] filter timeout.")
+                # print("[INFO] filter timeout.")
                 # Short pause before retrying
                 time.sleep(1.0)
             except Exception as e:

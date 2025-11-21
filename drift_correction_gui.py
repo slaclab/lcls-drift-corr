@@ -227,6 +227,10 @@ class DriftCorrectionDisplay(Display):
         status_layout.addWidget(QLabel("Heartbeat:"), 1, 0)
         heartbeat_label = self.create_integer_label("ca://LAS:UNDS:FLOAT:41")
         status_layout.addWidget(heartbeat_label, 1, 1)
+        # ATM feedback
+        status_layout.addWidget(QLabel("ATM Feedback (ns):"), 2, 0)
+        heartbeat_label = self.create_integer_label("ca://LAS:LHN:LLG2:02:PHASCTL:ATM_FBK_OFFSET")
+        status_layout.addWidget(heartbeat_label, 2, 1)
         system_layout.addWidget(status_group)
 
         # System control group
